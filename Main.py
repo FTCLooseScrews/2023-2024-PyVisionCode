@@ -1,12 +1,14 @@
 # imports
 import math
 import cv2
+import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 from sklearn import cluster
 from kneed import KneeLocator
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import MinMaxScaler
+
 
 # turning the BGR into hex
 def encodeHex(color):
@@ -26,14 +28,14 @@ def simplifyData(img):
 
 
 # finding the knee/elbow of the graph
-def elbowGraph(data_transformed, rangeNum):
+def elbowGraph(transformedData, rangeNum):
     SumOfSquaredDistances = []
 
     x = range(1, rangeNum)
     for i in x:
         print(i)
         km = KMeans(n_clusters=i)
-        km.fit(data_transformed)
+        km.fit(transformedData)
         SumOfSquaredDistances.append(km.inertia_)
     kn = KneeLocator(x, SumOfSquaredDistances, curve='convex', direction='decreasing')
 
@@ -46,13 +48,16 @@ def elbowGraph(data_transformed, rangeNum):
     plt.vlines(kn.knee, plt.ylim()[0], plt.ylim()[1], linestyles='dashed')
     plt.savefig('ElbowGraph.png')
     plt.show()
+    plt.close()
     return kn.knee
+
 
 # function to convert hex into rgb
 def hexToRgb(value):
     value = value.lstrip('#')
     lv = len(value)
     return tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
+
 
 # rgb -> hsv
 def rgbToHsv(rgb):
@@ -87,42 +92,42 @@ def findPos(contours, contourIndex):
     propXCoord = contours[contourIndex].x
     xPosList.sort()
 
-    return xPosList.index(propXCoord) + 1
+    pos = xPosList.index(propXCoord) + 1
+
+    if pos == 1:
+        print("left")
+    elif pos==2:
+        print("mid")
+    else:
+        print("right")
+
+    return pos
 
 
-def closest(colors, color):
-    colors = np.array(colors)
-    color = np.array(color)
-    distances = np.sqrt(np.sum((colors - color) ** 2, axis=1))
-    index_of_smallest = np.where(distances == np.amin(distances))
-    smallest_distance = colors[index_of_smallest]
-    return smallest_distance
-
-
-def findClosestColor(rgbList, realcolor):
+def findClosestColor(rgbList, realColor):
     disValList = []
     for color2 in rgbList:
-        r = float(color2[0] - realcolor[0])
-        g = float(color2[1] - realcolor[1])
-        b = float(color2[2] - realcolor[2])
+        r = float(color2[0] - realColor[0])
+        g = float(color2[1] - realColor[1])
+        b = float(color2[2] - realColor[2])
         disVal = math.sqrt(((abs(r)) ** 2) + ((abs(g)) ** 2) + ((abs(b)) ** 2))
         disValList.append(disVal)
     return disValList
 
 
 # TO READ PRESAVED IMAGE
-img = cv2.imread('pic5.png') / 255
+img = cv2.imread('pic3.png') / 255
 
 # READING CAMERA INIT FRAME
 # img = cv2.imread('FRAME .jpg') / 255
 img = cv2.resize(img, (640, 480))
 
+# blurring
 blurImg = cv2.GaussianBlur(img, (15, 15), 0)
 
 # reshape images
 h, w, c = blurImg.shape
 img2 = blurImg.reshape(h * w, c)
-# Resize the image
 
 # max k value to check for
 rangeNum = 21
@@ -131,7 +136,7 @@ rangeNum = 21
 optimalNum = elbowGraph(simplifyData(img2), rangeNum)
 
 # set number of colors
-number = optimalNum
+number = optimalNum + 2
 
 # clustering into KMeans
 kmeans_cluster = cluster.KMeans(n_clusters=number)
@@ -164,9 +169,15 @@ HSVList = []
 hexList = []
 
 # converting color output and printing to hex and RGB
+fig = plt.figure()
 for i, uni in enumerate(unique):
     color = uni[0]
     count = uni[1]
+
+    plt.bar(i, count, color=encodeHex(color))
+
+
+    color = uni[0]
     hexColor = encodeHex(color)
     hexList.append(hexColor)
     RGB = hexToRgb(hexColor)
@@ -182,7 +193,10 @@ for i, uni in enumerate(unique):
     print("HSV:")
     print([h, s, v])
     print("===")
-
+# show and save plot
+plt.show()
+plt.savefig('colorHistogram.png')
+plt.close()
 # set to false if teamColor is blue
 isRed = True
 
