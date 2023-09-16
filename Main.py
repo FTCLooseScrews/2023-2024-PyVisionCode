@@ -1,6 +1,5 @@
 # imports
 import math
-
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
@@ -9,16 +8,7 @@ from kneed import KneeLocator
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import MinMaxScaler
 
-
-# cap = cv2.VideoCapture(1)
-# print("asdsad")
-# ret, frame = cap.read()
-# cv2.imshow("frame", frame)
-# cv2.imwrite("frame.png", frame)
-# print("aadsadsad")
-# cv2.waitKey(1)
-# cap.release()
-
+# turning the BGR into hex
 def encodeHex(color):
     b = color[0]
     g = color[1]
@@ -58,13 +48,13 @@ def elbowGraph(data_transformed, rangeNum):
     plt.show()
     return kn.knee
 
-
+# function to convert hex into rgb
 def hexToRgb(value):
     value = value.lstrip('#')
     lv = len(value)
     return tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
 
-
+# rgb -> hsv
 def rgbToHsv(rgb):
     r = rgb[0]
     g = rgb[1]
@@ -88,6 +78,7 @@ def rgbToHsv(rgb):
     v = mx * 100
     return h, s, v
 
+
 def findPos(contours, contourIndex):
     xPosList = []
     for contour in contours:
@@ -98,9 +89,6 @@ def findPos(contours, contourIndex):
 
     return xPosList.index(propXCoord) + 1
 
-### WIP CODE ###
-# def closest(list, K):
-#     return list[min(range(len(list)), key=lambda i: abs(list[i] - K))]
 
 def closest(colors, color):
     colors = np.array(colors)
@@ -110,14 +98,6 @@ def closest(colors, color):
     smallest_distance = colors[index_of_smallest]
     return smallest_distance
 
-
-# # Define a function to calculate the Euclidean distance between two HSV colors
-# def hsvDistance(color1, color2):
-#
-#     # Calculate Euclidean distance
-#     return np.linalg.norm(color1 - color2)
-
-# read image into range 0 to 1
 
 def findClosestColor(rgbList, realcolor):
     disValList = []
@@ -137,7 +117,7 @@ img = cv2.imread('pic5.png') / 255
 # img = cv2.imread('FRAME .jpg') / 255
 img = cv2.resize(img, (640, 480))
 
-blurImg = cv2.GaussianBlur(img, (19, 19), 0)
+blurImg = cv2.GaussianBlur(img, (15, 15), 0)
 
 # reshape images
 h, w, c = blurImg.shape
