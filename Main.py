@@ -88,12 +88,20 @@ def rgbToHsv(rgb):
     v = mx * 100
     return h, s, v
 
+def findPos(contours, contourIndex):
+    xPosList = []
+    for contour in contours:
+        xPosList.append(contour.x)
+
+    propXCoord = contours[contourIndex].x
+    xPosList.sort()
+
+    return xPosList.index(propXCoord) + 1
 
 ### WIP CODE ###
 # def closest(list, K):
 #     return list[min(range(len(list)), key=lambda i: abs(list[i] - K))]
 
-#
 def closest(colors, color):
     colors = np.array(colors)
     color = np.array(color)
@@ -111,37 +119,30 @@ def closest(colors, color):
 
 # read image into range 0 to 1
 
-def findClosestColor(hsvList, realColor):
-    distanceList = []
-
-    for color in hsvList:
-        dh = min(abs(color[0] - realColor[0]), 360 - abs(color[0] - realColor[0])) / 180.0
-        ds = abs(color[1] - realColor[1]) / 255.0
-        dv = abs(color[2] - realColor[2]) / 255.0
-        distance = math.sqrt(dh * dh + ds * ds + dv * dv)
-        distanceList.append(distance)
-
-    return distanceList
-
-def findClosestColor2(rgbList, realcolor):
+def findClosestColor(rgbList, realcolor):
     disValList = []
     for color2 in rgbList:
         r = float(color2[0] - realcolor[0])
         g = float(color2[1] - realcolor[1])
         b = float(color2[2] - realcolor[2])
-        disVal = math.sqrt( ((abs(r))**2) + ((abs(g))**2) + ((abs(b))**2) )
+        disVal = math.sqrt(((abs(r)) ** 2) + ((abs(g)) ** 2) + ((abs(b)) ** 2))
         disValList.append(disVal)
     return disValList
 
+
 # TO READ PRESAVED IMAGE
-img = cv2.imread('pic1.jpg') / 255
+img = cv2.imread('pic5.png') / 255
 
 # READING CAMERA INIT FRAME
 # img = cv2.imread('FRAME .jpg') / 255
+img = cv2.resize(img, (640, 480))
+
+blurImg = cv2.GaussianBlur(img, (19, 19), 0)
 
 # reshape images
-h, w, c = img.shape
-img2 = img.reshape(h * w, c)
+h, w, c = blurImg.shape
+img2 = blurImg.reshape(h * w, c)
+# Resize the image
 
 # max k value to check for
 rangeNum = 21
@@ -152,7 +153,7 @@ optimalNum = elbowGraph(simplifyData(img2), rangeNum)
 # set number of colors
 number = optimalNum
 
-# cluseting into KMeans
+# clustering into KMeans
 kmeans_cluster = cluster.KMeans(n_clusters=number)
 kmeans_cluster.fit(img2)
 cluster_centers = kmeans_cluster.cluster_centers_
@@ -175,11 +176,13 @@ print("============")
 print(counts)
 unique = zip(colors, counts)
 
+# creating color lists
 hList = []
 HSV = []
 RGBList = []
 HSVList = []
 hexList = []
+
 # converting color output and printing to hex and RGB
 for i, uni in enumerate(unique):
     color = uni[0]
@@ -200,18 +203,20 @@ for i, uni in enumerate(unique):
     print([h, s, v])
     print("===")
 
-red = True
-if red:
+# set to false if teamColor is blue
+isRed = True
+
+if isRed:
     color = [255, 0, 0]
 else:
     color = [0, 255, 0]
 
-distanceList = findClosestColor2(RGBList, color)
+distanceList = findClosestColor(RGBList, color)
 
 indexOfColor = (distanceList.index(min(distanceList)))
 
 # finding bgr color
-BGR = [RGBList[indexOfColor][2], RGBList[indexOfColor][1], RGBList[indexOfColor][0] ]
+BGR = [RGBList[indexOfColor][2], RGBList[indexOfColor][1], RGBList[indexOfColor][0]]
 
 print(RGBList[indexOfColor])
 print(BGR)
@@ -230,5 +235,32 @@ cv2.imwrite('masked.png', result)
 cv2.imwrite('masked2.png', masked)
 cv2.imwrite('masked3.png', mask)
 
+# blurring
+mask = cv2.GaussianBlur(mask, (13, 13), 0)
+
+# dilation
+kernel = np.ones((7, 7), np.uint8)
+mask = cv2.dilate(mask, kernel, iterations=4)
+
+# showing the mas
+cv2.imshow("Mask", mask)
+
+# finding the contours
+contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+cv2.drawContours(img, contours, -1, (0, 255, 0), 3)
+
+cv2.imshow('Contours', img)
+
+# making list of contour areas
+areaList = []
+for contour in contours:
+    areaList.append(cv2.contourArea(contour))
+
+cv2.drawContours(img, contours[areaList.index(max(areaList))], -1, (255, 0, 255), 12)
+
+# highlight the prop
+cv2.imshow("POSITION", img)
+
+# wait for image to close
 cv2.waitKey(0)
 cv2.destroyAllWindows()
