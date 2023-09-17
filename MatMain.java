@@ -14,17 +14,19 @@ import java.util.*;
 import java.util.List;
 
 public class MatMain {
+
+    // reading image
     public static void main(String[] args) {
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 
-        Mat image = Imgcodecs.imread("C:\\Users\\advay\\misc\\pic1.jpg");
+        Mat image = Imgcodecs.imread("pic1.jpg");
         Imgproc.resize(image, image, new Size(640, 480));
 
         //blur image with gaussian blurring
         Mat blurredImage = new Mat();
         Imgproc.GaussianBlur(image, blurredImage, new Size(15, 15),0, 0);
 
-        Imgcodecs.imwrite("C:\\Users\\advay\\misc\\output.jpg", applyKmeans(blurredImage, findOptimalK(blurredImage)));
+        Imgcodecs.imwrite("output.jpg", applyKmeans(blurredImage, findOptimalK(blurredImage)));
     }
 
     public static int findOptimalK(Mat image) {
@@ -58,8 +60,9 @@ public class MatMain {
 
         double minAngle = 0;
 
+
+        // for each value of K starting at 2, find the K value that has an angle closest to 90 degrees.
         for (int k = 2; k < maxK-1; k++) {
-//            System.out.println("K-Value: " + (k+1) + ", Cost Value: " + wcssValues[k]);
             if (wcssValues[k] > wcssValues[k - 1]) continue;
             double angle = findAngle(1, (wcssValues[k] - wcssValues[k-1])/1E8, 1, (wcssValues[k+1] - wcssValues[k])/1E8);
             if (Math.abs(Math.PI/2 - angle) < Math.abs(Math.PI / 2 - minAngle)) {
@@ -75,12 +78,14 @@ public class MatMain {
         return bestK;
     }
 
+    // method for finding angle in the elbow graph
     public static double findAngle(double x1, double y1, double x2, double y2) {
         double dotProduct = x1 * x2 + y1 * y2;
         double magAB = Math.sqrt(Math.pow(x1, 2) + Math.pow(y1, 2)) * Math.sqrt(Math.pow(x2, 2) + Math.pow(y2, 2));
         return Math.acos(dotProduct/magAB);
     }
 
+    // saving elbow graph as a seperate picture
     public static void saveElbowGraph(double[] wcssValues) {
         int maxClusters = wcssValues.length;
         int[] x = new int[maxClusters];
@@ -110,12 +115,13 @@ public class MatMain {
 
         try {
             // Save the chart as a PNG image
-            BitmapEncoder.saveBitmap(chart, "C:\\Users\\advay\\misc\\ElbowGraphOpenCV.png", BitmapEncoder.BitmapFormat.PNG);
+            BitmapEncoder.saveBitmap(chart, "ElbowGraphOpenCV.png", BitmapEncoder.BitmapFormat.PNG);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+    // using the optimal K, apply kmeans clustering onto the image
     public static Mat applyKmeans(Mat image, int optimalK) {
         image.convertTo(image, CvType.CV_32F);
         Mat data = image.reshape(1, (int) image.total());
@@ -126,6 +132,7 @@ public class MatMain {
         int flags = Core.KMEANS_RANDOM_CENTERS;
         Mat centers = new Mat();
 
+        // perform kmeans
         Core.kmeans(data, optimalK, bestLabels, criteria, attempts, flags, centers);
 
         Mat draw = new Mat((int) image.total(), 1, CvType.CV_32FC3);
@@ -199,10 +206,12 @@ public class MatMain {
         //Print out position
         System.out.println("Position is: " + (index == 0 ? "Left" : index == 1 ? "Middle" : "Right"));
 
-        Imgcodecs.imwrite("C:\\Users\\advay\\misc\\contours.jpg", img);
+        Imgcodecs.imwrite("contours.jpg", img);
         return draw;
     }
 
+
+    // get the colors from the kmeans clustered image
     private static List<Color> getDominantColors(Mat img) {
         HashSet<String> uniqueColors = new HashSet<>();
         HashSet<Scalar> colors = new HashSet<>();
@@ -244,6 +253,8 @@ public class MatMain {
         return ret;
     }
 
+
+    // finding which color in the image is the "closest" color to either red or blue
     private static Color findClosestColor(Color targetColor, List<Color> colorList) {
         double minDistance = Double.MAX_VALUE;
         Color closestColor = null;
@@ -259,6 +270,8 @@ public class MatMain {
         return closestColor;
     }
 
+
+    // calculate euclidean distance in the  RGB color space between the colors.
     private static double calculateColorDistance(Color color1, Color color2) {
         int r1 = color1.getRed();
         int g1 = color1.getGreen();
